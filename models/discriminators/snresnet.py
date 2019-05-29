@@ -45,8 +45,10 @@ class SNResNetProjectionDiscriminator(nn.Module):
         for i in range(1, 7):
             h = getattr(self, 'block{}'.format(i))(h)
         h = self.activation(h)
+        print('h',h.shape)
         # Global pooling
         h = torch.sum(h, dim=(2, 3))
+        print('h', h.shape)
         output = self.l7(h)
         if y is not None:
             output += torch.sum(self.l_y(y) * h, dim=1, keepdim=True)
@@ -90,10 +92,21 @@ class SNResNetConcatDiscriminator(nn.Module):
         for i in range(1, 4):
             h = getattr(self, 'block{}'.format(i))(h)
         if y is not None:
+            # print(self.l_y(y).shape)
             emb = self.l_y(y).unsqueeze(-1).unsqueeze(-1)
+            # print(emb.shape)
             emb = emb.expand(emb.size(0), emb.size(1), h.size(2), h.size(3))
             h = torch.cat((h, emb), dim=1)
         for i in range(4, 7):
             h = getattr(self, 'block{}'.format(i))(h)
         h = torch.sum(self.activation(h), dim=(2, 3))
         return self.l7(h)
+if __name__ == '__main__':
+
+    d=SNResNetProjectionDiscriminator(64,10)
+    x=torch.randn(16,3,64,64)
+    import utils
+    y=utils.sample_pseudo_labels(10, 16, 'cpu')
+    out=d(x,y)
+    # print(y)
+    # print(d)
